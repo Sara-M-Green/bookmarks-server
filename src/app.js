@@ -18,6 +18,7 @@ app.use(helmet())
 app.use(cors())
 
 
+
 app.use(function validateBearerToken(req, res, next) {
     const apiToken = process.env.API_TOKEN
     const authToken = req.get('Authorization')
@@ -33,11 +34,9 @@ app.use(function validateBearerToken(req, res, next) {
 
 app.use(bookmarksRouter)
 
-
 app.get('/', (req, res) => {
     res.send('Bookmarks App!')
 })
-
 
 app.use(function errorHandler(error, req, res, next) {
     let response

@@ -2,17 +2,23 @@ const express = require('express')
 const { v4: uuid } = require('uuid')
 const logger = require('../logger')
 const { bookmarks } = require('../store')
+const BookmarkService = require('./bookmarks-service')
 
 const bookmarksRouter = express.Router()
 const bodyParser = express.json()
 
 bookmarksRouter
     .route('/bookmarks')
-    .get((req, res) => {
-        res.json(bookmarks)
+    .get((req, res, next) => {
+        const knexInstance = req.app.get('db')
+        BookmarkService.getAllBookmarks(knexInstance)
+            .then(articles => {
+                res.json(articles)
+             })
+            .catch(next)
     })
     .post(bodyParser, (req, res) => {
-        const { title, url, rating, desc } = req.body
+        const { title, url, rating, description } = req.body
 
         //validate required fields
         if (!title){
@@ -48,7 +54,7 @@ bookmarksRouter
             title,
             url,
             rating,
-            desc
+            description
         }
 
         bookmarks.push(bookmark)
@@ -61,22 +67,26 @@ bookmarksRouter
             .json(bookmark)
     })
 
+
 bookmarksRouter
-    .route('/bookmarks/:id')
-    .get((req, res) => {
-        const { id } = req.params
-        const bookmark = bookmarks.find(bm => bm.id == id)
-
-        //validate bookmark exists
-        if (!bookmark) {
-            logger.error(`Bookmark with id ${id} not found`)
-            return res
-                .status(404)
-                .send('Bookmark not found')
-        }
-
-        res.json(bookmark)
+    .route('/bookmarks/:bookmark_id')
+    .get((req, res, next) => {
+        const { bookmark_id } = req.params
+        const knexInstance = req.app.get('db')
+        BookmarkService.getById(knexInstance, bookmark_id)
+        //const bookmark = bookmarks.find(bm => bm.id == id)
+            .then(bookmark => {
+                if (!bookmark) {
+                    logger.error(`Bookmark not found`)
+                    return res
+                        .status(404)
+                        .send('Bookmark not found')
+                }
+                res.json(bookmark)    
+            })
+            .catch(next)
     })
+    
     .delete((req, res) => {
         const { id } = req.params
         const bookmarkIndex = bookmarks.findIndex(bm => bm.id == id)
